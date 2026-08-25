@@ -1063,20 +1063,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // Dynamic Line Items Adder for Create Purchase Bill Modal
+    // Dynamic Line Items Adder for Create Sales Invoice Modal
     const billItemsBody = document.getElementById('bill-items-body');
 
     function addBillItemRow(selectedPartId = '', qty = 1, price = 0) {
         const tr = document.createElement('tr');
         tr.className = 'bill-item-row';
 
-        let partOptions = `<option value="">Select Part...</option>`;
+        let partOptions = `<option value="">Select Part to Sell...</option>`;
         if (!partsList || partsList.length === 0) {
             partOptions = `<option value="">No parts found (Add in Master Parts first)</option>`;
         } else {
             partsList.forEach(p => {
                 const isSel = p.id == selectedPartId ? 'selected' : '';
-                partOptions += `<option value="${p.id}" data-price="${p.unit_price || 0}" ${isSel}>${p.part_code} - ${p.part_name} (₹${p.unit_price || 0})</option>`;
+                const availStock = parseFloat(p.current_stock) || 0;
+                const uom = p.unit_of_measure || 'Nos';
+                const stockLabel = availStock > 0 ? `(Stock: ${availStock} ${uom})` : `(OUT OF STOCK: 0 ${uom})`;
+                partOptions += `<option value="${p.id}" data-price="${p.unit_price || 0}" data-stock="${availStock}" data-uom="${uom}" data-name="${p.part_name}" ${isSel}>${p.part_code} - ${p.part_name} ${stockLabel} · ₹${p.unit_price || 0}</option>`;
             });
         }
 
@@ -1085,6 +1088,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <select class="form-control bill-item-part" required>
                     ${partOptions}
                 </select>
+                <div class="bill-item-stock-indicator mt-1" style="font-size:0.8rem; font-weight:600;"></div>
             </td>
             <td>
                 <input type="number" step="0.01" min="0.01" class="form-control text-right bill-item-qty" value="${qty}" required>
@@ -1104,22 +1108,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         billItemsBody.appendChild(tr);
 
-        // Attach change listeners for live calculations
         const partSelect = tr.querySelector('.bill-item-part');
         const qtyInput = tr.querySelector('.bill-item-qty');
         const priceInput = tr.querySelector('.bill-item-price');
         const removeBtn = tr.querySelector('.btn-remove-item');
 
-        partSelect.addEventListener('change', () => {
+        function updateStockDisplay() {
             const opt = partSelect.options[partSelect.selectedIndex];
+            const stockInd = tr.querySelector('.bill-item-stock-indicator');
+            if (!opt || !opt.value) {
+                if (stockInd) stockInd.innerHTML = '';
+                calculateBillTotals();
+                return;
+            }
+
+            const availStock = parseFloat(opt.getAttribute('data-stock')) || 0;
+            const uom = opt.getAttribute('data-uom') || 'Nos';
             const defaultPrice = opt.getAttribute('data-price');
+            const qtyVal = parseFloat(qtyInput.value) || 0;
+
             if (defaultPrice && (!priceInput.value || parseFloat(priceInput.value) === 0)) {
                 priceInput.value = parseFloat(defaultPrice).toFixed(2);
             }
-            calculateBillTotals();
-        });
 
-        qtyInput.addEventListener('input', calculateBillTotals);
+            if (availStock <= 0) {
+                stockInd.innerHTML = `<span class="badge badge-danger" style="font-size:0.78rem;"><i class="fa-solid fa-triangle-exclamation"></i> Out of Stock (0 ${uom})</span>`;
+            } else if (qtyVal > availStock) {
+                stockInd.innerHTML = `<span class="badge badge-danger" style="font-size:0.78rem;"><i class="fa-solid fa-circle-exclamation"></i> Exceeds Available Stock! (Max Available: ${availStock} ${uom})</span>`;
+                qtyInput.style.borderColor = 'var(--danger)';
+            } else {
+                stockInd.innerHTML = `<span class="badge badge-success" style="font-size:0.78rem; background:rgba(16,185,129,0.15); color:var(--success);"><i class="fa-solid fa-boxes-stacked"></i> Current Stock in Hand: <strong>${availStock} ${uom}</strong></span>`;
+                qtyInput.style.borderColor = '';
+            }
+
+            calculateBillTotals();
+        }
+
+        partSelect.addEventListener('change', updateStockDisplay);
+        qtyInput.addEventListener('input', updateStockDisplay);
         priceInput.addEventListener('input', calculateBillTotals);
 
         removeBtn.addEventListener('click', () => {
@@ -1127,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             calculateBillTotals();
         });
 
-        calculateBillTotals();
+        updateStockDisplay();
     }
 
     function calculateBillTotals() {
@@ -1198,21 +1224,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const notes = document.getElementById('bill-notes').value;
 
         const items = [];
+        let hasStockError = false;
+
         document.querySelectorAll('.bill-item-row').forEach(row => {
-            const part_id = row.querySelector('.bill-item-part').value;
-            const quantity = row.querySelector('.bill-item-qty').value;
-            const unit_price = row.querySelector('.bill-item-price').value;
-            if (part_id && parseFloat(quantity) > 0) {
+            const selectEl = row.querySelector('.bill-item-part');
+            const part_id = selectEl.value;
+            const quantity = parseFloat(row.querySelector('.bill-item-qty').value) || 0;
+            const unit_price = parseFloat(row.querySelector('.bill-item-price').value) || 0;
+
+            const opt = selectEl.options[selectEl.selectedIndex];
+            const availStock = opt ? parseFloat(opt.getAttribute('data-stock')) || 0 : 0;
+            const partName = opt ? (opt.getAttribute('data-name') || 'Item') : 'Item';
+
+            if (part_id && quantity > 0) {
+                if (quantity > availStock) {
+                    showToast(`Cannot sell ${quantity} units of "${partName}". Only ${availStock} available in stock!`, 'error');
+                    hasStockError = true;
+                }
                 items.push({ part_id, quantity, unit_price });
             }
         });
 
+        if (hasStockError) return;
+
         if (items.length === 0) {
-            showToast('Please add at least one line item to the bill', 'error');
+            showToast('Please add at least one line item to the sales invoice', 'error');
             return;
         }
 
         const billData = {
+            bill_type: 'SALE',
             vendor_id,
             bill_number,
             bill_date,
@@ -1230,12 +1271,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(res.message, 'success');
                 closeModal('modal-purchase-bill');
                 loadPurchaseBillsData();
-                loadInventoryData(); // Refresh stock IN balance
+                loadInventoryData(); // Refresh stock OUT balance in inventory
             } else {
-                showToast(res.message || 'Failed to create purchase bill', 'error');
+                showToast(res.message || 'Failed to create sales invoice', 'error');
             }
         } catch (err) {
-            showToast('Server error processing purchase bill', 'error');
+            showToast('Server error processing sales invoice', 'error');
         }
     });
 

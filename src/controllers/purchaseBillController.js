@@ -1,7 +1,7 @@
 const db = require('../db/database');
 const PDFDocument = require('pdfkit');
 
-// Get Summary Statistics for Purchase & Billing KPI Cards
+// Get Summary Statistics for Sales & Billing KPI Cards
 exports.getPurchaseStats = async (req, res) => {
     try {
         const [totalBillsRows] = await db.query('SELECT COUNT(*) AS count FROM purchase_bills');
@@ -22,12 +22,12 @@ exports.getPurchaseStats = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error fetching purchase stats:', error);
-        res.status(500).json({ success: false, message: 'Server error fetching purchase stats' });
+        console.error('Error fetching billing stats:', error);
+        res.status(500).json({ success: false, message: 'Server error fetching billing stats' });
     }
 };
 
-// Get All Purchase Bills
+// Get All Sales / Purchase Bills
 exports.getAllBills = async (req, res) => {
     try {
         const { search, vendor_id, start_date, end_date } = req.query;
@@ -69,12 +69,12 @@ exports.getAllBills = async (req, res) => {
 
         res.json({ success: true, count: bills.length, data: bills });
     } catch (error) {
-        console.error('Error fetching purchase bills:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch purchase bills' });
+        console.error('Error fetching sales bills:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch sales bills' });
     }
 };
 
-// Get Single Purchase Bill with Line Items
+// Get Single Bill with Line Items
 exports.getBillById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -88,12 +88,12 @@ exports.getBillById = async (req, res) => {
         const bill = billRows[0];
 
         if (!bill) {
-            return res.status(404).json({ success: false, message: 'Purchase bill not found' });
+            return res.status(404).json({ success: false, message: 'Sales bill not found' });
         }
 
         // Fetch line items
         const [items] = await db.query(`
-            SELECT pbi.*, p.part_code, p.part_name, p.unit_of_measure, p.drawing_number, p.material_grade
+            SELECT pbi.*, p.part_code, p.part_name, p.unit_of_measure, p.drawing_number, p.material_grade, p.current_stock
             FROM purchase_bill_items pbi
             JOIN parts p ON pbi.part_id = p.id
             WHERE pbi.bill_id = ?
@@ -113,7 +113,7 @@ exports.getBillById = async (req, res) => {
     }
 };
 
-// Helper function to auto-generate unique Purchase Bill Ref Number
+// Helper function to auto-generate unique Invoice Number
 async function generateBillNumber() {
     const [rows] = await db.query('SELECT id FROM purchase_bills ORDER BY id DESC LIMIT 1');
     const last = rows[0];
@@ -122,7 +122,7 @@ async function generateBillNumber() {
     return `INV-${year}-${nextId}`;
 }
 
-// Create Purchase Bill (Atomic MySQL Transaction + Auto Inventory Stock IN)
+// Create Sales Invoice (Atomic MySQL Transaction + Auto Stock OUT Deduction)
 exports.createBill = async (req, res) => {
     const pool = await db.getPool();
     const conn = await pool.getConnection();
@@ -130,14 +130,14 @@ exports.createBill = async (req, res) => {
     try {
         const {
             bill_number, vendor_id, bill_date, due_date,
-            items, tax_rate, discount, additional_charges, notes
+            items, tax_rate, discount, additional_charges, notes, bill_type = 'SALE'
         } = req.body;
 
         if (!vendor_id || !items || !Array.isArray(items) || items.length === 0) {
             conn.release();
             return res.status(400).json({
                 success: false,
-                message: 'Vendor and at least one line item are required'
+                message: 'Vendor / Client and at least one line item are required'
             });
         }
 
@@ -149,7 +149,7 @@ exports.createBill = async (req, res) => {
 
         await conn.beginTransaction();
 
-        // 1. Calculate Line Items Subtotal
+        // 1. Validate Stock Balance & Calculate Line Items Subtotal
         let subtotal = 0.0;
         const processedItems = [];
 
@@ -170,6 +170,18 @@ exports.createBill = async (req, res) => {
                 return res.status(400).json({ success: false, message: `Invalid Quantity for ${part.part_name}` });
             }
 
+            const prevStock = parseFloat(part.current_stock) || 0;
+
+            // Strict Stock Validation for Sales (Manufacturing Dispatch)
+            if (bill_type === 'SALE' && qty > prevStock) {
+                await conn.rollback();
+                conn.release();
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient stock for "${part.part_name}" (${part.part_code}). Available Stock: ${prevStock} ${part.unit_of_measure}, but requested to sell ${qty}!`
+                });
+            }
+
             const lineTotal = qty * price;
             subtotal += lineTotal;
 
@@ -177,17 +189,18 @@ exports.createBill = async (req, res) => {
                 part_id: item.part_id,
                 part_name: part.part_name,
                 part_code: part.part_code,
+                unit_of_measure: part.unit_of_measure || 'Nos',
                 quantity: qty,
                 unit_price: price,
                 total_price: lineTotal,
-                prev_stock: parseFloat(part.current_stock) || 0
+                prev_stock: prevStock
             });
         }
 
         const taxAmount = (subtotal - discountVal) * (taxPercent / 100.0);
         const totalAmount = (subtotal - discountVal) + taxAmount + addCharges;
 
-        // 2. Insert Purchase Bill Header
+        // 2. Insert Invoice Header
         const [billResult] = await conn.query(`
             INSERT INTO purchase_bills (
                 bill_number, vendor_id, bill_date, due_date,
@@ -202,7 +215,7 @@ exports.createBill = async (req, res) => {
 
         const billId = billResult.insertId;
 
-        // 3. Insert Line Items AND Update Inventory Stock IN
+        // 3. Insert Line Items AND Deduct Inventory Stock OUT
         for (const pi of processedItems) {
             // Insert bill line item
             await conn.query(`
@@ -210,23 +223,23 @@ exports.createBill = async (req, res) => {
                 VALUES (?, ?, ?, ?, ?)
             `, [billId, pi.part_id, pi.quantity, pi.unit_price, pi.total_price]);
 
-            // Update Master Stock
-            const newStock = pi.prev_stock + pi.quantity;
+            // Deduct Stock OUT for Sales Invoice
+            const newStock = pi.prev_stock - pi.quantity;
             await conn.query(`
-                UPDATE parts SET current_stock = current_stock + ?, in_inventory = 1 WHERE id = ?
-            `, [pi.quantity, pi.part_id]);
+                UPDATE parts SET current_stock = ?, in_inventory = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+            `, [newStock, pi.part_id]);
 
-            // Log Stock Transaction Audit Trail
+            // Log Stock OUT Transaction Audit Trail
             await conn.query(`
                 INSERT INTO stock_transactions (part_id, transaction_type, quantity, previous_stock, new_stock, reference_number, notes)
-                VALUES (?, 'IN', ?, ?, ?, ?, ?)
+                VALUES (?, 'OUT', ?, ?, ?, ?, ?)
             `, [
                 pi.part_id,
                 pi.quantity,
                 pi.prev_stock,
                 newStock,
                 bNum,
-                `Purchase Bill: ${bNum}`
+                `Sales Invoice Dispatch: ${bNum}`
             ]);
         }
 
@@ -236,21 +249,21 @@ exports.createBill = async (req, res) => {
         res.status(201).json({
             success: true,
             data: { billId, billNumber: bNum, totalAmount },
-            message: `Purchase Bill '${bNum}' created successfully! Stock IN updated for all items.`
+            message: `Sales Invoice '${bNum}' created successfully! Stock OUT deducted for all items.`
         });
 
     } catch (error) {
         try { await conn.rollback(); } catch (e) {}
         conn.release();
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ success: false, message: 'Bill Invoice Number already exists in database' });
+            return res.status(400).json({ success: false, message: 'Invoice Number already exists in database' });
         }
-        console.error('Error creating purchase bill:', error);
-        res.status(500).json({ success: false, message: 'Server error creating purchase bill' });
+        console.error('Error creating sales bill:', error);
+        res.status(500).json({ success: false, message: 'Server error creating sales invoice' });
     }
 };
 
-// Generate & Stream PDF Purchase Bill / Invoice
+// Generate & Stream PDF Sales Invoice / Tax Invoice
 exports.generateBillPDF = async (req, res) => {
     try {
         const { id } = req.params;
@@ -264,7 +277,7 @@ exports.generateBillPDF = async (req, res) => {
         const bill = billRows[0];
 
         if (!bill) {
-            return res.status(404).send('Bill not found');
+            return res.status(404).send('Invoice not found');
         }
 
         const [items] = await db.query(`
@@ -272,13 +285,14 @@ exports.generateBillPDF = async (req, res) => {
             FROM purchase_bill_items pbi
             JOIN parts p ON pbi.part_id = p.id
             WHERE pbi.bill_id = ?
+            ORDER BY pbi.id ASC
         `, [id]);
 
         // Create PDF Document stream
         const doc = new PDFDocument({ margin: 40, size: 'A4' });
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="Purchase_Bill_${bill.bill_number}.pdf"`);
+        res.setHeader('Content-Disposition', `inline; filename="Tax_Invoice_${bill.bill_number}.pdf"`);
 
         doc.pipe(res);
 
@@ -293,36 +307,36 @@ exports.generateBillPDF = async (req, res) => {
             address: 'Plot No. 128, Industrial Area Phase-II, Focal Point, Ludhiana, Punjab'
         };
 
-        // Company Header
+        // Company Header (Seller)
         doc.fillColor('#1e293b').fontSize(20).font('Helvetica-Bold').text((comp.company_name || 'CRYSTAL AGRO').toUpperCase(), 40, 40);
-        doc.fontSize(9).font('Helvetica').fillColor('#64748b').text(comp.tagline || 'Industrial Agro Machinery & Parts Manufacturer', 40, 64);
+        doc.fontSize(9).font('Helvetica').fillColor('#64748b').text(comp.tagline || 'Industrial Agro Machinery & Precision Parts Manufacturer', 40, 64);
         doc.text(`GSTIN: ${comp.gst_number || 'N/A'} | Phone: ${comp.phone || 'N/A'} | ${comp.email || ''}`, 40, 76);
-        if (comp.address) doc.fontSize(8).text(`Address: ${comp.address}`, 40, 88);
+        if (comp.address) doc.fontSize(8).text(`Factory / Office: ${comp.address}`, 40, 88);
 
         doc.moveTo(40, 102).lineTo(555, 102).strokeColor('#cbd5e1').lineWidth(1).stroke();
 
         // Invoice Meta Box
-        doc.fillColor('#0f172a').fontSize(16).font('Helvetica-Bold').text('PURCHASE INVOICE', 380, 40, { align: 'right' });
+        doc.fillColor('#0f172a').fontSize(16).font('Helvetica-Bold').text('TAX INVOICE / SALES BILL', 320, 40, { align: 'right' });
         doc.fontSize(10).font('Helvetica').fillColor('#334155');
-        doc.text(`Bill Ref #: ${bill.bill_number}`, 380, 62, { align: 'right' });
-        doc.text(`Bill Date: ${bill.bill_date}`, 380, 76, { align: 'right' });
+        doc.text(`Invoice Ref #: ${bill.bill_number}`, 320, 62, { align: 'right' });
+        doc.text(`Invoice Date: ${bill.bill_date}`, 320, 76, { align: 'right' });
 
-        // Vendor Info Box
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('VENDOR DETAILS:', 40, 115);
+        // Buyer / Consignee Details
+        doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('BILLED TO / BUYER DETAILS:', 40, 115);
         doc.fontSize(10).font('Helvetica').fillColor('#334155');
-        doc.text(`Company: ${bill.vendor_name}`, 40, 130);
+        doc.text(`Customer / Vendor: ${bill.vendor_name}`, 40, 130);
         doc.text(`Contact: ${bill.contact_person || 'N/A'} (${bill.phone || 'N/A'})`, 40, 144);
         doc.text(`GSTIN: ${bill.vendor_gstin || 'N/A'}`, 40, 158);
-        doc.text(`Address: ${bill.address || 'N/A'}`, 40, 172);
+        doc.text(`Delivery Address: ${bill.address || 'N/A'}`, 40, 172);
 
         // Line Items Table Header
         let y = 205;
         doc.rect(40, y, 515, 24).fill('#f1f5f9');
         doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold');
-        doc.text('PART CODE & NAME', 45, y + 7);
-        doc.text('QTY', 260, y + 7, { width: 50, align: 'right' });
-        doc.text('UNIT PRICE', 320, y + 7, { width: 80, align: 'right' });
-        doc.text('TOTAL (₹)', 440, y + 7, { width: 105, align: 'right' });
+        doc.text('DESCRIPTION OF GOODS / PART', 45, y + 7);
+        doc.text('QTY DISPATCHED', 250, y + 7, { width: 70, align: 'right' });
+        doc.text('RATE (₹)', 330, y + 7, { width: 70, align: 'right' });
+        doc.text('AMOUNT (₹)', 430, y + 7, { width: 115, align: 'right' });
 
         y += 28;
         doc.font('Helvetica').fontSize(9).fillColor('#0f172a');
@@ -333,9 +347,9 @@ exports.generateBillPDF = async (req, res) => {
             const total = parseFloat(item.total_price) || 0;
 
             doc.text(`${item.part_code} - ${item.part_name}`, 45, y);
-            doc.text(`${qty} ${item.unit_of_measure}`, 260, y, { width: 50, align: 'right' });
-            doc.text(`₹${price.toFixed(2)}`, 320, y, { width: 80, align: 'right' });
-            doc.text(`₹${total.toFixed(2)}`, 440, y, { width: 105, align: 'right' });
+            doc.text(`${qty} ${item.unit_of_measure}`, 250, y, { width: 70, align: 'right' });
+            doc.text(`₹${price.toFixed(2)}`, 330, y, { width: 70, align: 'right' });
+            doc.text(`₹${total.toFixed(2)}`, 430, y, { width: 115, align: 'right' });
             y += 20;
         }
 
@@ -374,13 +388,14 @@ exports.generateBillPDF = async (req, res) => {
         doc.text('Grand Total:', 340, y, { width: 100, align: 'right' });
         doc.text(`₹${grandTotal.toFixed(2)}`, 440, y, { width: 105, align: 'right' });
 
-        // Footer Note
-        doc.fillColor('#94a3b8').fontSize(8).font('Helvetica').text('Computer generated invoice. No signature required.', 40, 780, { align: 'center' });
+        // Terms & Footer Note
+        doc.fillColor('#64748b').fontSize(8).font('Helvetica').text('1. Goods once sold will not be taken back or exchanged. 2. Subject to Ludhiana Jurisdiction.', 40, 755);
+        doc.fillColor('#94a3b8').fontSize(8).font('Helvetica').text('Computer generated Tax Invoice. No signature required.', 40, 780, { align: 'center' });
 
         doc.end();
 
     } catch (error) {
         console.error('Error generating PDF:', error);
-        res.status(500).send('Server error generating bill PDF');
+        res.status(500).send('Server error generating Tax Invoice PDF');
     }
 };
