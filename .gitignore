@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment and sensitive credentials
+.env
+
+# Local data & SQLite files
+data/
+*.db
+*.db-journal
+
+# Temporary / OS / Build archives
+*.zip
+*.bmp
+*.log
+.DS_Store
+Thumbs.db
+
+# Stray nested subdirectories
+Ai/
+Crystal Agro CRM/
+crystalcrm/

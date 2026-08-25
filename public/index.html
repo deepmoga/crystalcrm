@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Agro CRM - Enterprise Inventory & ERP</title>
+    <!-- Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Login Screen Overlay -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="login-logo-icon">
+                    <i class="fa-solid fa-wheat-awn-circle-exclamation"></i>
+                </div>
+                <h2>CRYSTAL AGRO</h2>
+                <p>Industrial CRM & ERP Portal</p>
+            </div>
+
+            <form id="form-login">
+                <div class="login-input-group">
+                    <label for="login-username">Username</label>
+                    <div class="login-input-wrap">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" id="login-username" required placeholder="Enter username" autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="login-input-group">
+                    <label for="login-password">Password</label>
+                    <div class="login-input-wrap">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
+                        <button type="button" class="btn-toggle-pwd" id="btn-toggle-login-pwd" title="Toggle password visibility">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="login-error-msg" style="display:none; color:#f87171; font-size:0.82rem; margin-top:0.5rem; text-align:center; font-weight:600;"></div>
+
+                <button type="submit" class="btn-login-submit" id="btn-login-submit">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In to Portal
+                </button>
+            </form>
+
+            <div class="login-demo-section">
+                <div class="login-demo-label">Quick 1-Click Demo Logins</div>
+                <div class="demo-chips-grid">
+                    <div class="demo-chip" onclick="quickLoginDemo('admin', 'admin123')">
+                        <span class="demo-chip-icon">👑</span>
+                        <span><strong>Admin</strong> (Full)</span>
+                    </div>
+                    <div class="demo-chip" onclick="quickLoginDemo('store', 'store123')">
+                        <span class="demo-chip-icon">📦</span>
+                        <span><strong>Store</strong> Mgr</span>
+                    </div>
+                    <div class="demo-chip" onclick="quickLoginDemo('planner', 'planner123')">
+                        <span class="demo-chip-icon">🧮</span>
+                        <span><strong>Planner</strong></span>
+                    </div>
+                    <div class="demo-chip" onclick="quickLoginDemo('vendor', 'vendor123')">
+                        <span class="demo-chip-icon">🤝</span>
+                        <span><strong>Vendor</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand" id="sidebar-company-brand" onclick="openAdminSettingsModal('company')" style="cursor:pointer;" title="Click to view/edit Company Profile & Logo">
+                <div class="brand-logo" id="sidebar-brand-logo-container">
+                    <img id="sidebar-custom-logo" src="" alt="Logo" style="display:none; width:36px; height:36px; object-fit:contain; border-radius:8px;">
+                    <i class="fa-solid fa-wheat-awn-circle-exclamation" id="sidebar-default-icon"></i>
+                </div>
+                <div class="brand-text">
+                    <h2 id="sidebar-company-title">CRYSTAL AGRO</h2>
+                    <span id="sidebar-company-tagline">INDUSTRIAL CRM & ERP</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-tab="dashboard">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <div class="nav-section-title mt-4">PLANNING & PRODUCTION</div>
+                <a href="#" class="nav-item" data-tab="master-parts">
+                    <i class="fa-solid fa-shapes"></i>
+                    <span>Master Parts</span>
+                    <span class="badge badge-primary" id="sidebar-master-parts-count">0</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="planner">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>Material Planner</span>
+                    <span class="badge badge-success" id="sidebar-planner-count">0</span>
+                </a>
+
+                <div class="nav-section-title mt-4">MASTER DATA & INVENTORY</div>
+                <a href="#" class="nav-item" data-tab="categories">
+                    <i class="fa-solid fa-folder-tree"></i>
+                    <span>Categories</span>
+                    <span class="badge badge-outline" id="sidebar-categories-count">0</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="inventory">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Inventory Stock</span>
+                    <span class="badge badge-outline" id="sidebar-parts-count">0</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="transactions">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                    <span>Stock Transactions</span>
+                </a>
+
+                <div class="nav-section-title mt-4">PHASE 2 - VENDOR & PURCHASING</div>
+                <a href="#" class="nav-item" data-tab="vendors">
+                    <i class="fa-solid fa-handshake"></i>
+                    <span>Vendor</span>
+                    <span class="badge badge-success" id="sidebar-vendors-count">0</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="billing">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Purchase & Billing</span>
+                    <span class="badge badge-primary" id="sidebar-bills-count">0</span>
+                </a>
+
+                <div class="nav-section-title mt-4" id="nav-section-admin">SYSTEM & ACCESS</div>
+                <a href="#" class="nav-item" data-tab="users" id="nav-item-users">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <span>Users & Roles</span>
+                    <span class="badge badge-outline" id="sidebar-users-count">4</span>
+                </a>
+                <a href="#" class="nav-item" id="nav-item-settings" onclick="openAdminSettingsModal('company')" style="cursor:pointer;">
+                    <i class="fa-solid fa-building-gear"></i>
+                    <span>Company & Profile</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header Bar with Top Right User Profile & Settings -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h1 id="page-title">Executive & Operations Dashboard</h1>
+                    <p class="subtitle" id="page-subtitle">Real-time overview of parts catalog, inventory valuation, stock movements, and quick operations</p>
+                </div>
+                <div class="header-right-tools">
+                    <div class="header-actions" id="header-actions" style="display:none;">
+                        <button class="btn btn-outline" id="btn-manage-categories" title="Manage Categories (Add, Edit, Delete)">
+                            <i class="fa-solid fa-folder-tree"></i> Categories
+                        </button>
+                        <button class="btn btn-primary btn-nowrap" id="btn-add-part">
+                            <i class="fa-solid fa-plus"></i> Create Master Part
+                        </button>
+                    </div>
+
+                    <!-- Top Right User Profile Dropdown Widget -->
+                    <div class="user-header-menu-container" id="user-header-menu-container">
+                        <button type="button" class="user-header-trigger" id="user-header-trigger" title="User Profile & Preferences">
+                            <div class="user-header-avatar" id="header-user-avatar">AD</div>
+                            <div class="user-header-info">
+                                <span class="user-header-name" id="header-user-name">System Administrator</span>
+                                <span class="user-header-role" id="header-user-role">admin</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down user-header-chevron"></i>
+                        </button>
+
+                        <!-- Dropdown Popup Menu -->
+                        <div class="user-dropdown-menu" id="user-dropdown-menu">
+                            <div class="user-dropdown-header">
+                                <div class="user-dropdown-avatar" id="dropdown-user-avatar">AD</div>
+                                <div class="user-dropdown-details">
+                                    <h4 id="dropdown-user-fullname">System Administrator</h4>
+                                    <span class="user-dropdown-handle" id="dropdown-user-username">@admin</span>
+                                    <div class="user-dropdown-role-tag" id="dropdown-user-role-badge">ADMIN</div>
+                                </div>
+                            </div>
+
+                            <div class="user-dropdown-permissions">
+                                <span class="perm-title">Permissions:</span>
+                                <div class="perm-tags" id="dropdown-user-perms">
+                                    <span class="permission-pill granted"><i class="fa-solid fa-check"></i> Add</span>
+                                    <span class="permission-pill granted"><i class="fa-solid fa-check"></i> Edit</span>
+                                    <span class="permission-pill granted"><i class="fa-solid fa-check"></i> Del</span>
+                                </div>
+                            </div>
+
+                            <div class="user-dropdown-divider"></div>
+
+                            <!-- Admin Profile & Business Settings Option -->
+                            <button type="button" class="user-dropdown-item" id="dropdown-btn-open-settings" onclick="openAdminSettingsModal('company')">
+                                <i class="fa-solid fa-building-gear text-primary"></i>
+                                <span>Business Profile & GST</span>
+                            </button>
+
+                            <!-- Change Password Option -->
+                            <button type="button" class="user-dropdown-item" id="dropdown-btn-change-pwd" onclick="openAdminSettingsModal('password')">
+                                <i class="fa-solid fa-key text-warning"></i>
+                                <span>Change Password</span>
+                            </button>
+
+                            <div class="user-dropdown-divider"></div>
+
+                            <!-- Theme Switcher Toggle Row -->
+                            <div class="user-dropdown-item theme-switch-row" id="dropdown-theme-toggle" title="Switch Theme">
+                                <div class="theme-switch-label">
+                                    <i class="fa-solid fa-circle-half-stroke" id="dropdown-theme-icon"></i>
+                                    <span>Theme Mode</span>
+                                </div>
+                                <span class="theme-mode-badge" id="dropdown-theme-text">Dark Mode</span>
+                            </div>
+
+                            <div class="user-dropdown-divider"></div>
+
+                            <!-- Sign Out Button -->
+                            <button type="button" class="user-dropdown-item logout-item" id="btn-top-logout">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard KPI Cards (Dynamic Per Tab) -->
+            <section class="kpi-grid" id="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-blue">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Total Master Parts</span>
+                        <h3 class="kpi-value" id="kpi-total-parts">0</h3>
+                        <span class="kpi-subtext">Active items in database</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-green">
+                        <i class="fa-solid fa-indian-rupee-sign"></i>
+                    </div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Total Inventory Valuation</span>
+                        <h3 class="kpi-value" id="kpi-stock-value">₹0.00</h3>
+                        <span class="kpi-subtext">Calculated (Stock × Unit Rate)</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-warning" id="kpi-low-stock-card" style="cursor: pointer;">
+                    <div class="kpi-icon icon-amber">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Low Stock Alerts</span>
+                        <h3 class="kpi-value" id="kpi-low-stock-count">0</h3>
+                        <span class="kpi-subtext text-warning">Below safety threshold</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-purple">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">Stock Movement Log</span>
+                        <h3 class="kpi-value" id="kpi-total-tx">0</h3>
+                        <span class="kpi-subtext">Recorded IN/OUT events</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 0: Executive & Operations Dashboard -->
+            <div id="tab-dashboard-view" class="tab-content active">
+                <div class="dashboard-grid">
+                    <!-- Hero KPIs -->
+                    <div class="dashboard-hero-kpis">
+                        <div class="hero-kpi-card" onclick="switchTab('master-parts')">
+                            <div class="hero-kpi-icon blue"><i class="fa-solid fa-shapes"></i></div>
+                            <div class="hero-kpi-data">
+                                <h3 id="dash-kpi-parts">0</h3>
+                                <span>Master Parts</span>
+                            </div>
+                        </div>
+                        <div class="hero-kpi-card" onclick="switchTab('inventory')">
+                            <div class="hero-kpi-icon green"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                            <div class="hero-kpi-data">
+                                <h3 id="dash-kpi-val">₹0.00</h3>
+                                <span>Stock Valuation</span>
+                            </div>
+                        </div>
+                        <div class="hero-kpi-card" onclick="switchTab('inventory')">
+                            <div class="hero-kpi-icon amber"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="hero-kpi-data">
+                                <h3 id="dash-kpi-low-stock">0</h3>
+                                <span>Low Stock Items</span>
+                            </div>
+                        </div>
+                        <div class="hero-kpi-card" onclick="switchTab('categories')">
+                            <div class="hero-kpi-icon purple"><i class="fa-solid fa-folder-tree"></i></div>
+                            <div class="hero-kpi-data">
+                                <h3 id="dash-kpi-categories">0</h3>
+                                <span>Categories</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Operational Graphs -->
+                    <div class="dashboard-charts-row">
+                        <div class="dash-panel chart-panel">
+                            <div class="dash-panel-header"><h3><i class="fa-solid fa-chart-bar text-primary"></i> Parts by Category</h3></div>
+                            <div id="dash-category-chart" class="horizontal-chart"><div class="chart-empty">Loading graph...</div></div>
+                        </div>
+                        <div class="dash-panel chart-panel">
+                            <div class="dash-panel-header"><h3><i class="fa-solid fa-chart-pie text-warning"></i> Stock Health</h3></div>
+                            <div id="dash-stock-chart" class="stock-chart"><div class="chart-empty">Loading graph...</div></div>
+                        </div>
+                        <div class="dash-panel chart-panel">
+                            <div class="dash-panel-header"><h3><i class="fa-solid fa-chart-column text-success"></i> Recent Stock Movement</h3></div>
+                            <div id="dash-movement-chart" class="movement-chart"><div class="chart-empty">Loading graph...</div></div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Bar -->
+                    <div class="dashboard-quick-actions-bar">
+                        <div class="quick-actions-title">
+                            <i class="fa-solid fa-bolt text-primary"></i> Quick Operations
+                        </div>
+                        <div class="quick-action-buttons">
+                            <button class="btn btn-primary btn-sm auth-btn-add" data-create-module="master_parts" onclick="openCreatePartModal()">
+                                <i class="fa-solid fa-plus"></i> Create Master Part
+                            </button>
+                            <button class="btn btn-secondary btn-sm" data-view-module="planner" onclick="switchTab('planner')">
+                                <i class="fa-solid fa-calculator"></i> Purchasing Calculator
+                            </button>
+                            <button class="btn btn-outline btn-sm auth-btn-add" data-create-module="categories" onclick="openCreateCategoryModal()">
+                                <i class="fa-solid fa-folder-plus"></i> Add Category
+                            </button>
+                            <button class="btn btn-outline btn-sm auth-btn-add" data-create-module="billing" onclick="openCreateBillModal()">
+                                <i class="fa-solid fa-file-invoice-dollar"></i> New Purchase Bill
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Split Row: Recent Master Parts & Recent Stock Movement Activity -->
+                    <div class="dashboard-split-row">
+                        <!-- Left: Latest Master Parts -->
+                        <div class="dash-panel">
+                            <div class="dash-panel-header">
+                                <h3><i class="fa-solid fa-shapes text-primary"></i> Recent Master Parts</h3>
+                                <button class="btn btn-outline btn-sm" onclick="switchTab('master-parts')">View All</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table" style="font-size:0.86rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>Part Name</th>
+                                            <th>Drawing #</th>
+                                            <th>Material</th>
+                                            <th>Dimensions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dash-recent-parts-tbody">
+                                        <tr><td colspan="4" class="text-center py-4 text-muted">No parts recorded yet.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Right: Activity Feed -->
+                        <div class="dash-panel">
+                            <div class="dash-panel-header">
+                                <h3><i class="fa-solid fa-clock-rotate-left text-warning"></i> Recent Inventory Log</h3>
+                                <button class="btn btn-outline btn-sm" onclick="switchTab('transactions')">View All</button>
+                            </div>
+                            <ul class="activity-feed-list" id="dash-activity-feed">
+                                <li class="text-muted text-center py-4">No recent stock movements.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: Master Parts Page (Add, Edit, Delete, Material List) -->
+            <div id="tab-master-parts-view" class="tab-content">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="master-parts-search" placeholder="Search by Part Name, Drawing #, Material Grade, Code...">
+                        </div>
+                        <div class="filter-group">
+                            <select id="master-parts-filter-category" class="form-control">
+                                <option value="all">All Categories</option>
+                            </select>
+
+                            <button id="btn-open-create-master-part" class="btn btn-primary btn-nowrap">
+                                <i class="fa-solid fa-plus"></i> Create Master Part
+                            </button>
+
+                            <button id="btn-refresh-master-parts" class="btn btn-icon" title="Refresh Table">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table" id="master-parts-table">
+                            <thead>
+                                <tr>
+                                    <th>Part Name</th>
+                                    <th>Drawing #</th>
+                                    <th>Category</th>
+                                    <th>Material Grade</th>
+                                    <th>Dimensions (Ø × L)</th>
+                                    <th class="text-center">Inventory Status</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="master-parts-table-body">
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">Loading Master Parts...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Categories Page (Full Category List View, Search, Add, Edit, Delete) -->
+            <div id="tab-categories-view" class="tab-content">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="categories-page-search" placeholder="Search categories by name, description...">
+                        </div>
+                        <div class="filter-group">
+                            <button id="btn-open-create-category-page" class="btn btn-primary btn-nowrap">
+                                <i class="fa-solid fa-plus"></i> Add New Category
+                            </button>
+                            <button id="btn-refresh-categories-page" class="btn btn-icon" title="Refresh Table">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table" id="categories-page-table">
+                            <thead>
+                                <tr>
+                                    <th>Category Name</th>
+                                    <th>Description</th>
+                                    <th class="text-center">Assigned Parts</th>
+                                    <th>Created Date</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-page-table-body">
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">Loading categories...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: Inventory Table View -->
+            <div id="tab-inventory-view" class="tab-content">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="inventory-search" placeholder="Search by Part Name, Code, Drawing #, Grade, Specs...">
+                        </div>
+                        <div class="filter-group">
+                            <button id="btn-stock-adjust" class="btn btn-primary btn-nowrap">
+                                <i class="fa-solid fa-boxes-stacked"></i> Add Inventory
+                            </button>
+
+                            <select id="filter-category" class="form-control">
+                                <option value="all">All Categories</option>
+                            </select>
+
+                            <button id="filter-low-stock-toggle" class="btn btn-outline-warning">
+                                <i class="fa-solid fa-filter"></i> Low Stock Only
+                            </button>
+
+                            <button id="btn-refresh-inventory" class="btn btn-icon" title="Refresh Table">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table" id="parts-table">
+                            <thead>
+                                <tr>
+                                    <th>Part Code</th>
+                                    <th>Part Name & Category</th>
+                                    <th>Drawing #</th>
+                                    <th>Material Grade / Specs</th>
+                                    <th>Location</th>
+                                    <th>Unit Price</th>
+                                    <th class="text-center">Current Stock</th>
+                                    <th>Stock Status</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="parts-table-body">
+                                <tr>
+                                    <td colspan="9" class="text-center py-5">
+                                        <i class="fa-solid fa-spinner fa-spin fa-2x text-muted"></i>
+                                        <p class="mt-2">Loading Inventory Database...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer">
+                        <span id="showing-records-text">Showing 0 parts</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Global Transactions View -->
+            <div id="tab-transactions-view" class="tab-content">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="tx-search" placeholder="Search transactions by reference, part name, reason...">
+                        </div>
+                        <div class="filter-group">
+                            <select id="tx-filter-type" class="form-control">
+                                <option value="all">All Types (IN & OUT)</option>
+                                <option value="IN">Stock IN</option>
+                                <option value="OUT">Stock OUT</option>
+                            </select>
+                            <button id="btn-refresh-tx" class="btn btn-icon" title="Refresh Log">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Part Code & Name</th>
+                                    <th>Type</th>
+                                    <th class="text-right">Quantity</th>
+                                    <th class="text-right">Prev Stock</th>
+                                    <th class="text-right">New Stock</th>
+                                    <th>Reference #</th>
+                                    <th>Reason / Notes</th>
+                                    <th>Created By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tx-table-body">
+                                <tr>
+                                    <td colspan="9" class="text-center py-5">Loading Transaction Logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Vendor Management (Phase 2) -->
+            <div id="tab-vendors-view" class="tab-content">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="vendor-search" placeholder="Search vendor by company name, contact person, email, GSTIN...">
+                        </div>
+                        <div class="filter-group">
+                            <button id="btn-add-vendor" class="btn btn-primary">
+                                <i class="fa-solid fa-handshake"></i> Add New Vendor
+                            </button>
+                            <button id="btn-refresh-vendors" class="btn btn-icon" title="Refresh Vendors">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Company Name</th>
+                                    <th>Contact Person & Info</th>
+                                    <th>GSTIN / Tax ID</th>
+                                    <th>Payment Terms</th>
+                                    <th>Total Bills Issued</th>
+                                    <th class="text-right">Total Amount Billed</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vendor-table-body">
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">Loading Vendor Profiles...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: Multi-Vendor Purchase & Billing (Phase 2) -->
+            <div id="tab-billing-view" class="tab-content">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="bill-search" placeholder="Search bills by invoice #, vendor name, notes...">
+                        </div>
+                        <div class="filter-group">
+                            <select id="bill-vendor-filter" class="form-control">
+                                <option value="all">All Vendors</option>
+                            </select>
+                            <button id="btn-create-bill" class="btn btn-success">
+                                <i class="fa-solid fa-file-circle-plus"></i> Create Purchase Bill
+                            </button>
+                            <button id="btn-refresh-bills" class="btn btn-icon" title="Refresh Bills">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Bill Date</th>
+                                    <th>Vendor Name</th>
+                                    <th class="text-center">Items Count</th>
+                                    <th class="text-right">Subtotal</th>
+                                    <th class="text-right">Tax (GST)</th>
+                                    <th class="text-right">Grand Total</th>
+                                    <th>Status</th>
+                                    <th class="text-right">Actions / Print</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bill-table-body">
+                                <tr>
+                                    <td colspan="9" class="text-center py-5">Loading Purchase Bills...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: Material Planner & Purchasing Calculator -->
+            <div id="tab-planner-view" class="tab-content">
+                <div class="planner-grid-layout">
+                    
+                    <!-- Left Column: Calculate Requirement Panel (Matching Image 1) -->
+                    <div class="planner-left-col">
+                        <div class="calc-req-card">
+                            <div class="calc-req-header">
+                                <i class="fa-regular fa-square-check calc-req-icon"></i>
+                                <h3>Calculate Requirement</h3>
+                            </div>
+                            <div class="calc-req-body">
+                                <div class="calc-form-group">
+                                    <label for="calc-category-filter">
+                                        <i class="fa-solid fa-filter"></i> 1. Filter by Category
+                                    </label>
+                                    <select id="calc-category-filter" class="calc-input">
+                                        <option value="all">All Categories</option>
+                                    </select>
+                                </div>
+
+                                <div class="calc-form-group">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.35rem;">
+                                        <label for="calc-part-select" style="margin-bottom:0;">2. Select Saved Part</label>
+                                        <button type="button" id="btn-goto-master-parts" class="btn-inline-link" title="Open Master Parts Page">
+                                            <i class="fa-solid fa-shapes"></i> Master Parts
+                                        </button>
+                                    </div>
+                                    <select id="calc-part-select" class="calc-input">
+                                        <option value="">Select Saved Part...</option>
+                                    </select>
+                                </div>
+
+                                <div class="calc-form-group">
+                                    <label for="calc-target-qty">3. Target Qty (Pcs to manufacture)</label>
+                                    <input type="number" min="1" id="calc-target-qty" class="calc-input" placeholder="e.g. 100">
+                                </div>
+
+                                <button type="button" id="btn-add-to-calc" class="btn-calc-action">
+                                    <i class="fa-solid fa-plus"></i> Add to Calculation
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Card: Add Master Part Directly -->
+                        <div class="planner-box-card">
+                            <div class="planner-box-header">
+                                <div class="planner-box-title">
+                                    <i class="fa-solid fa-shapes text-primary"></i>
+                                    <h3>Quick Master Part</h3>
+                                </div>
+                                <button type="button" id="btn-planner-create-part" class="btn btn-sm btn-primary">
+                                    <i class="fa-solid fa-plus"></i> New Part
+                                </button>
+                            </div>
+                            <div class="planner-box-body" style="font-size: 0.86rem; color: var(--text-muted);">
+                                Add and manage material grades, drawing numbers, and dimensions in the dedicated 
+                                <a href="#" id="link-goto-master-parts" style="color:var(--primary); font-weight:700;">Master Parts page</a>.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="table-container" style="margin-top:1.5rem;">
+                    <div class="breakdown-header">
+                        <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> Calculation History</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead><tr>
+                                <th>Date & Time</th><th>Part</th><th>Material / Size</th>
+                                <th class="text-center">Target Qty</th><th>Total Length</th>
+                                <th>Est. Weight</th><th>Created By</th>
+                            </tr></thead>
+                            <tbody id="planner-history-body">
+                                <tr><td colspan="7" class="text-center py-4">Loading calculation history...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Users & Permissions Page (Admin Only) -->
+            <div id="tab-users-view" class="tab-content">
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="users-search" placeholder="Search users by name, username, role...">
+                        </div>
+                        <div class="filter-group">
+                            <button id="btn-open-create-user" class="btn btn-primary btn-nowrap auth-btn-add">
+                                <i class="fa-solid fa-user-plus"></i> Add New User
+                            </button>
+                            <button id="btn-refresh-users" class="btn btn-icon" title="Refresh Table">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table" id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Section Permissions</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">Loading users...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL 1: Create / Edit Master Part -->
+    <div class="modal" id="modal-part">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-part-title"><i class="fa-solid fa-shapes"></i> Create Master Part</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="form-part">
+                    <input type="hidden" id="part-id">
+                    <input type="hidden" id="part-code">
+                    <div class="modal-body">
+                        <!-- Row 1: Part Name & Drawing Number -->
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="part-name">Part Name <span class="text-danger">*</span></label>
+                                <input type="text" id="part-name" class="form-control" required placeholder="e.g. Reel Adjust Cool">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="drawing-number">Drawing Number <span class="text-danger">*</span></label>
+                                <input type="text" id="drawing-number" class="form-control" required placeholder="e.g. 522">
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Category & Material Grade -->
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.3rem;">
+                                    <label for="part-category" style="margin-bottom:0;">Category <span class="text-danger">*</span></label>
+                                    <button type="button" id="btn-quick-cat-part-modal" class="btn-inline-link" title="Create New Category">
+                                        <i class="fa-solid fa-plus"></i> New
+                                    </button>
+                                </div>
+                                <select id="part-category" class="form-control" required>
+                                    <option value="">Select Category...</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="material-grade">Material Grade</label>
+                                <input type="text" id="material-grade" class="form-control" placeholder="e.g. EN-8D, MS, EN8">
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Dimensions -->
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="diameter">Diameter (mm)</label>
+                                <input type="number" step="0.01" id="diameter" class="form-control" placeholder="e.g. 39">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="length">Length (mm)</label>
+                                <input type="number" step="0.01" id="length" class="form-control" placeholder="e.g. 18">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-modal-submit-part">
+                            <i class="fa-solid fa-plus"></i> Create Master Part
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1B: Add / Edit Full Inventory Item -->
+    <div class="modal" id="modal-inventory-item">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-inv-item-title"><i class="fa-solid fa-boxes-stacked"></i> Add Inventory Item</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="form-inventory-item" onsubmit="event.preventDefault(); window.handleInventoryItemSubmit(event);">
+                    <input type="hidden" id="inv-item-id">
+                    <div class="modal-body">
+                        <div class="form-group inventory-part-picker">
+                            <label for="inv-item-master-search">Select Item <span class="text-danger">*</span></label>
+                            <div class="searchable-select">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="inv-item-master-search" class="form-control" placeholder="Search Master Parts by name, code or drawing..." autocomplete="off">
+                                <input type="hidden" id="inv-item-master-select">
+                                <div id="inv-item-master-options" class="searchable-select-options"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-4">
+                                <label for="inv-item-price">Unit Price (₹)</label>
+                                <input type="number" step="0.01" min="0" id="inv-item-price" class="form-control" placeholder="0.00">
+                            </div>
+                            <div class="form-group col-4">
+                                <label for="inv-item-stock">Current / Opening Stock</label>
+                                <input type="number" step="0.01" min="0" id="inv-item-stock" class="form-control" placeholder="0.00">
+                            </div>
+                            <div class="form-group col-4">
+                                <label for="inv-item-min-stock">Low Stock Alert Level</label>
+                                <input type="number" step="0.01" min="0" id="inv-item-min-stock" class="form-control" value="5">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inv-item-specs">Note</label>
+                            <textarea id="inv-item-specs" class="form-control" rows="3" placeholder="Optional note..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-inv-item">
+                            <i class="fa-solid fa-plus"></i> Save to Inventory Stock
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Stock IN / Stock OUT -->
+    <div class="modal" id="modal-stock-tx">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-right-left"></i> Stock IN / Stock OUT Transaction</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="form-stock-tx">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="tx-part-id">Select Part <span class="text-danger">*</span></label>
+                            <select id="tx-part-id" class="form-control" required>
+                                <option value="">Select Part...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="tx-type">Transaction Type <span class="text-danger">*</span></label>
+                                <select id="tx-type" class="form-control" required>
+                                    <option value="IN">Stock IN (+ Received)</option>
+                                    <option value="OUT">Stock OUT (- Consumed/Issued)</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="tx-quantity">Quantity <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" id="tx-quantity" class="form-control" required min="0.01" placeholder="Enter quantity">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tx-reference">Reference / Bill / PO / Job #</label>
+                            <input type="text" id="tx-reference" class="form-control" placeholder="e.g. PO-2026-884 or JOB-104">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tx-reason">Reason / Category <span class="text-danger">*</span></label>
+                            <select id="tx-reason" class="form-control" required>
+                                <option value="Purchase Receipt">Purchase Receipt (Stock IN)</option>
+                                <option value="Production Consumption">Production Issue (Stock OUT)</option>
+                                <option value="Assembly Consumption">Assembly Consumption (Stock OUT)</option>
+                                <option value="Damaged / Scrap">Damaged / Scrap (Stock OUT)</option>
+                                <option value="Stock Adjustment">Physical Audit Adjustment</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tx-notes">Additional Notes</label>
+                            <textarea id="tx-notes" class="form-control" rows="2" placeholder="Optional comments..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-check"></i> Submit Transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Add / Edit Category -->
+    <div class="modal" id="modal-category">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-category-title"><i class="fa-solid fa-folder-plus"></i> Add Category</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="form-category">
+                    <input type="hidden" id="category-edit-id">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="category-name">Category Name <span class="text-danger">*</span></label>
+                            <input type="text" id="category-name" class="form-control" required placeholder="e.g. Forged Flanges">
+                        </div>
+                        <div class="form-group">
+                            <label for="category-desc">Description (Optional)</label>
+                            <textarea id="category-desc" class="form-control" rows="3" placeholder="Short summary of items..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-cat-submit">
+                            <i class="fa-solid fa-plus"></i> Save Category
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Part Stock History -->
+    <div class="modal" id="modal-part-history">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-history-title"><i class="fa-solid fa-clock-rotate-left"></i> Stock Movement History</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Type</th>
+                                    <th class="text-right">Qty Changed</th>
+                                    <th class="text-right">Previous Stock</th>
+                                    <th class="text-right">New Stock</th>
+                                    <th>Reference #</th>
+                                    <th>Reason / Notes</th>
+                                    <th>User</th>
+                                </tr>
+                            </thead>
+                            <tbody id="part-history-table-body">
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">Loading history...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline close-modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: Add / Edit Vendor (Phase 2) -->
+    <div class="modal" id="modal-vendor">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-vendor-title"><i class="fa-solid fa-handshake"></i> Add Vendor Profile</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="form-vendor">
+                    <input type="hidden" id="vendor-id">
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="vendor-company">Vendor Company Name <span class="text-danger">*</span></label>
+                                <input type="text" id="vendor-company" class="form-control" required placeholder="e.g. Apex Steel & Forgings Ltd">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="vendor-contact">Contact Person Name</label>
+                                <input type="text" id="vendor-contact" class="form-control" placeholder="e.g. Rajesh Sharma">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="vendor-phone">Phone / Mobile Number</label>
+                                <input type="text" id="vendor-phone" class="form-control" placeholder="e.g. +91 98123 45678">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="vendor-email">Email Address</label>
+                                <input type="email" id="vendor-email" class="form-control" placeholder="e.g. sales@apexsteel.in">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="vendor-gstin">GSTIN / Tax ID Number</label>
+                                <input type="text" id="vendor-gstin" class="form-control" placeholder="e.g. 03AAACA1234A1Z1">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="vendor-payment-terms">Default Payment Terms</label>
+                                <select id="vendor-payment-terms" class="form-control">
+                                    <option value="Immediate">Immediate / Advance</option>
+                                    <option value="15 Days">15 Days Credit</option>
+                                    <option value="30 Days" selected>30 Days Credit</option>
+                                    <option value="45 Days">45 Days Credit</option>
+                                    <option value="60 Days">60 Days Credit</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vendor-address">Full Office / Factory Address</label>
+                            <textarea id="vendor-address" class="form-control" rows="2" placeholder="Street, Industrial Area, City, State, Pincode..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Vendor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: Create Multi-Item Purchase Bill (Phase 2) -->
+    <div class="modal" id="modal-purchase-bill">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-file-invoice-dollar"></i> Create Purchase Bill</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="form-purchase-bill">
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="bill-vendor-id">Select Vendor <span class="text-danger">*</span></label>
+                                <select id="bill-vendor-id" class="form-control" required>
+                                    <option value="">Select Vendor...</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="bill-number-input">Invoice / Ref Number <small class="text-muted">(Auto if blank)</small></label>
+                                <input type="text" id="bill-number-input" class="form-control" placeholder="e.g. INV-2026-104">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="bill-date">Bill Date <span class="text-danger">*</span></label>
+                                <input type="date" id="bill-date" class="form-control" required>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="bill-due-date">Payment Due Date</label>
+                                <input type="date" id="bill-due-date" class="form-control">
+                            </div>
+                        </div>
+
+                        <h4 class="mt-3 mb-2" style="font-size: 0.95rem; font-weight:700; color:var(--text-main);">
+                            <i class="fa-solid fa-list-check"></i> Bill Line Items (Auto Updates Master Stock IN)
+                        </h4>
+
+                        <div class="table-responsive mb-3">
+                            <table class="data-table" id="bill-items-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 45%;">Inventory Part</th>
+                                        <th style="width: 15%; text-align:right;">Qty Received</th>
+                                        <th style="width: 20%; text-align:right;">Unit Rate (₹)</th>
+                                        <th style="width: 15%; text-align:right;">Line Total</th>
+                                        <th style="width: 5%; text-align:center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bill-items-body">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="button" class="btn btn-outline btn-sm mb-4" id="btn-add-bill-item">
+                            <i class="fa-solid fa-plus"></i> Add Line Item
+                        </button>
+
+                        <div class="form-row">
+                            <div class="form-group col-3">
+                                <label for="bill-subtotal">Subtotal (₹)</label>
+                                <input type="text" id="bill-subtotal" class="form-control" readonly value="0.00" style="background:var(--bg-card-hover); font-weight:700;">
+                            </div>
+                            <div class="form-group col-3">
+                                <label for="bill-tax-rate">Tax / GST %</label>
+                                <input type="number" step="0.1" id="bill-tax-rate" class="form-control" value="18">
+                            </div>
+                            <div class="form-group col-3">
+                                <label for="bill-discount">Discount (₹)</label>
+                                <input type="number" step="0.01" id="bill-discount" class="form-control" value="0.00">
+                            </div>
+                            <div class="form-group col-3">
+                                <label for="bill-freight">Freight / Charges (₹)</label>
+                                <input type="number" step="0.01" id="bill-freight" class="form-control" value="0.00">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-8">
+                                <label for="bill-notes">Bill Remarks / Notes</label>
+                                <input type="text" id="bill-notes" class="form-control" placeholder="Optional notes for vendor...">
+                            </div>
+                            <div class="form-group col-4">
+                                <label for="bill-grand-total">Grand Total (₹)</label>
+                                <input type="text" id="bill-grand-total" class="form-control" readonly value="₹0.00" style="background:var(--success-bg); color:var(--success); font-size:1.15rem; font-weight:800;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-check-double"></i> Save Bill & Receive Stock IN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 8: Add / Edit User (Admin RBAC) -->
+    <div class="modal" id="modal-user">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-user-title"><i class="fa-solid fa-user-plus"></i> Add New User</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="form-user">
+                    <input type="hidden" id="user-id">
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="user-username">Username <span class="text-danger">*</span></label>
+                                <input type="text" id="user-username" class="form-control" required placeholder="e.g. jsmith">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="user-fullname">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" id="user-fullname" class="form-control" required placeholder="e.g. John Smith">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="user-role">System Role <span class="text-danger">*</span></label>
+                                <select id="user-role" class="form-control" required onchange="applyRoleDefaultPermissions(this.value)">
+                                    <option value="store">Store Manager</option>
+                                    <option value="planner">Production Planner</option>
+                                    <option value="admin">System Administrator</option>
+                                    <option value="vendor">Vendor / Supplier</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="user-password">Password <span id="user-pwd-help" class="text-danger">*</span></label>
+                                <input type="password" id="user-password" class="form-control" placeholder="Enter password">
+                            </div>
+                        </div>
+
+                        <div class="form-group permission-matrix-wrap">
+                            <label class="permission-matrix-title"><i class="fa-solid fa-shield-halved text-primary"></i> Section-wise Permissions</label>
+                            <p class="text-muted" style="font-size:.78rem;margin:.2rem 0 .65rem;">View, Create, Edit and Delete can be assigned independently for every section.</p>
+                            <div class="table-responsive">
+                                <table class="permission-matrix">
+                                    <thead><tr><th>Section</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr></thead>
+                                    <tbody id="user-permissions-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top:0.75rem;">
+                            <label for="user-status">Account Status</label>
+                            <select id="user-status" class="form-control">
+                                <option value="active">Active (Full Access)</option>
+                                <option value="inactive">Inactive / Deactivated</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-modal-submit-user">
+                            <i class="fa-solid fa-plus"></i> Save User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 8: Admin Profile, Company Business Details & Change Password -->
+    <div class="modal" id="modal-admin-profile">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-settings-title"><i class="fa-solid fa-building-gear text-primary"></i> Business Profile & Admin Settings</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                
+                <!-- Settings Tabs Header -->
+                <div class="settings-modal-tabs">
+                    <button type="button" class="settings-tab-btn active" data-settings-tab="company" onclick="switchSettingsModalTab('company')">
+                        <i class="fa-solid fa-building"></i> Company Profile & GST
+                    </button>
+                    <button type="button" class="settings-tab-btn" data-settings-tab="profile" onclick="switchSettingsModalTab('profile')">
+                        <i class="fa-solid fa-user-gear"></i> Admin Account
+                    </button>
+                    <button type="button" class="settings-tab-btn" data-settings-tab="password" onclick="switchSettingsModalTab('password')">
+                        <i class="fa-solid fa-key"></i> Change Password
+                    </button>
+                </div>
+
+                <!-- Tab 1: Company Business Details & Logo -->
+                <form id="form-company-settings" class="settings-tab-pane active" data-settings-pane="company" onsubmit="event.preventDefault(); window.handleSaveCompanySettings(event);">
+                    <div class="modal-body">
+                        <!-- Logo Upload Section -->
+                        <div class="logo-upload-container">
+                            <div class="logo-preview-box" id="logo-preview-box">
+                                <img id="setting-logo-preview-img" src="" alt="Company Logo" style="display:none;">
+                                <div id="setting-logo-placeholder" class="logo-placeholder">
+                                    <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted"></i>
+                                    <span>No Logo Uploaded</span>
+                                </div>
+                            </div>
+                            <div class="logo-controls">
+                                <div style="display:flex; gap:0.5rem; align-items:center;">
+                                    <label class="logo-upload-btn btn btn-primary btn-sm" style="cursor:pointer; margin-bottom:0;">
+                                        <i class="fa-solid fa-upload"></i> Upload Business Logo
+                                        <input type="file" id="setting-logo-input" accept="image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;" onchange="window.handleLogoFileSelected(event)">
+                                    </label>
+                                    <button type="button" class="btn btn-outline btn-sm text-danger" id="btn-remove-logo" onclick="window.handleRemoveLogo()" style="display:none;">
+                                        <i class="fa-solid fa-trash"></i> Remove Logo
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size:0.8rem;">Recommended: Transparent PNG or JPG (Max 2MB). This logo will appear on your CRM branding and all Purchase Bill printouts.</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row mt-3">
+                            <div class="form-group col-6">
+                                <label for="setting-company-name">Company / Business Name <span class="text-danger">*</span></label>
+                                <input type="text" id="setting-company-name" class="form-control" required placeholder="e.g. Crystal Agro Industries">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="setting-gst">GSTIN / Tax Number <span class="text-danger">*</span></label>
+                                <input type="text" id="setting-gst" class="form-control" placeholder="e.g. 03AAAAA0000A1Z5" style="text-transform:uppercase;">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="setting-tagline">Tagline / Business Description</label>
+                                <input type="text" id="setting-tagline" class="form-control" placeholder="e.g. Agricultural Machinery & Precision Parts">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="setting-phone">Contact Number / Mobile <span class="text-danger">*</span></label>
+                                <input type="text" id="setting-phone" class="form-control" placeholder="e.g. +91 98765 43210">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="setting-email">Official Email Address <span class="text-danger">*</span></label>
+                                <input type="email" id="setting-email" class="form-control" placeholder="e.g. contact@crystalagro.com">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="setting-website">Website / Portal</label>
+                                <input type="text" id="setting-website" class="form-control" placeholder="e.g. www.crystalagro.com">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="setting-address">Factory / Office Address <span class="text-danger">*</span></label>
+                            <textarea id="setting-address" class="form-control" rows="2" placeholder="e.g. Plot No. 128, Industrial Area Phase-II, Focal Point, Ludhiana, Punjab - 141010"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-save-company-settings">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Business Details
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Tab 2: Admin Account Profile -->
+                <form id="form-admin-profile" class="settings-tab-pane" data-settings-pane="profile" onsubmit="event.preventDefault(); window.handleSaveAdminProfile(event);" style="display:none;">
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="admin-profile-fullname">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" id="admin-profile-fullname" class="form-control" required placeholder="e.g. System Administrator">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="admin-profile-username">Username</label>
+                                <input type="text" id="admin-profile-username" class="form-control" readonly style="opacity:0.75; cursor:not-allowed;">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="admin-profile-email">Personal / Account Email</label>
+                                <input type="email" id="admin-profile-email" class="form-control" placeholder="e.g. admin@crystalagro.com">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="admin-profile-phone">Personal Mobile Number</label>
+                                <input type="text" id="admin-profile-phone" class="form-control" placeholder="e.g. +91 98765 00000">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btn-save-admin-profile">
+                            <i class="fa-solid fa-user-check"></i> Update Profile
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Tab 3: Change Password -->
+                <form id="form-change-password" class="settings-tab-pane" data-settings-pane="password" onsubmit="event.preventDefault(); window.handleChangePasswordSubmit(event);" style="display:none;">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="pwd-current">Current Password <span class="text-danger">*</span></label>
+                            <div class="input-with-eye-wrap">
+                                <input type="password" id="pwd-current" class="form-control" required placeholder="Enter current account password">
+                                <button type="button" class="btn-input-eye" onclick="window.toggleEyePwd('pwd-current', this)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label for="pwd-new">New Password <span class="text-danger">*</span></label>
+                                <div class="input-with-eye-wrap">
+                                    <input type="password" id="pwd-new" class="form-control" required minlength="6" placeholder="Min 6 characters">
+                                    <button type="button" class="btn-input-eye" onclick="window.toggleEyePwd('pwd-new', this)">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="pwd-confirm">Confirm New Password <span class="text-danger">*</span></label>
+                                <div class="input-with-eye-wrap">
+                                    <input type="password" id="pwd-confirm" class="form-control" required minlength="6" placeholder="Re-type new password">
+                                    <button type="button" class="btn-input-eye" onclick="window.toggleEyePwd('pwd-confirm', this)">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="pwd-change-error" class="alert alert-danger" style="display:none; font-size:0.85rem; padding:0.6rem 0.85rem; margin-top:0.75rem; border-radius:8px;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                        <button type="submit" class="btn btn-secondary" id="btn-submit-change-pwd">
+                            <i class="fa-solid fa-key"></i> Change Password
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
