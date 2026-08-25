@@ -875,13 +875,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const billFilter = document.getElementById('bill-vendor-filter');
         const billVendorSelect = document.getElementById('bill-vendor-id');
 
-        billFilter.innerHTML = '<option value="all">All Vendors</option>';
-        billVendorSelect.innerHTML = '<option value="">Select Vendor...</option>';
+        const currentFilterVal = billFilter ? billFilter.value : 'all';
+        const currentBillVendorVal = billVendorSelect ? billVendorSelect.value : '';
 
-        vendors.forEach(v => {
-            billFilter.innerHTML += `<option value="${v.id}">${v.company_name}</option>`;
-            billVendorSelect.innerHTML += `<option value="${v.id}">${v.company_name} (${v.gstin || 'No GSTIN'})</option>`;
-        });
+        if (billFilter) {
+            billFilter.innerHTML = '<option value="all">All Vendors</option>';
+            if (vendors && vendors.length > 0) {
+                vendors.forEach(v => {
+                    const isSel = v.id == currentFilterVal ? 'selected' : '';
+                    billFilter.innerHTML += `<option value="${v.id}" ${isSel}>${v.company_name}</option>`;
+                });
+            }
+        }
+
+        if (billVendorSelect) {
+            if (!vendors || vendors.length === 0) {
+                billVendorSelect.innerHTML = '<option value="">No vendors found (Add in Vendors tab first)</option>';
+            } else {
+                billVendorSelect.innerHTML = '<option value="">Select Vendor...</option>';
+                vendors.forEach(v => {
+                    const isSel = v.id == currentBillVendorVal ? 'selected' : '';
+                    billVendorSelect.innerHTML += `<option value="${v.id}" ${isSel}>${v.company_name} (${v.gstin || 'No GSTIN'})</option>`;
+                });
+            }
+        }
     }
 
     // Add Vendor Modal Handler
@@ -979,10 +996,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vendor_id && vendor_id !== 'all') params.vendor_id = vendor_id;
 
         try {
-            const res = await API.getPurchaseBills(params);
-            if (res.success) {
-                const bills = res.data;
-                document.getElementById('sidebar-bills-count').innerText = bills.length;
+            // Preload latest vendors and parts
+            const [vRes, pRes, billsRes] = await Promise.all([
+                API.getVendors(),
+                API.getParts(),
+                API.getPurchaseBills(params)
+            ]);
+
+            if (vRes.success) {
+                vendorsList = vRes.data;
+                populateVendorDropdowns(vendorsList);
+            }
+
+            if (pRes.success) {
+                partsList = pRes.data;
+            }
+
+            if (billsRes.success) {
+                const bills = billsRes.data;
+                const sidebarBills = document.getElementById('sidebar-bills-count');
+                if (sidebarBills) sidebarBills.innerText = bills.length;
                 renderBillsTable(bills);
             }
         } catch (err) {
@@ -1014,9 +1047,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <small class="text-muted">${b.vendor_gstin ? 'GSTIN: ' + b.vendor_gstin : 'No GSTIN'}</small>
                     </td>
                     <td class="text-center"><span class="badge badge-outline">${b.item_count} Parts</span></td>
-                    <td class="text-right">₹${b.subtotal.toFixed(2)}</td>
-                    <td class="text-right"><small class="text-muted">₹${b.tax_amount.toFixed(2)} (${b.tax_rate}%)</small></td>
-                    <td class="text-right"><strong style="font-size:1.05rem; color:var(--success);">₹${b.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></td>
+                    <td class="text-right">₹${parseFloat(b.subtotal).toFixed(2)}</td>
+                    <td class="text-right"><small class="text-muted">₹${parseFloat(b.tax_amount).toFixed(2)} (${b.tax_rate}%)</small></td>
+                    <td class="text-right"><strong style="font-size:1.05rem; color:var(--success);">₹${parseFloat(b.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></td>
                     <td><span class="badge badge-success"><i class="fa-solid fa-check"></i> COMPLETED</span></td>
                     <td class="text-right">
                         <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
@@ -1038,10 +1071,14 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.className = 'bill-item-row';
 
         let partOptions = `<option value="">Select Part...</option>`;
-        partsList.forEach(p => {
-            const isSel = p.id == selectedPartId ? 'selected' : '';
-            partOptions += `<option value="${p.id}" data-price="${p.unit_price}" ${isSel}>${p.part_code} - ${p.part_name} (Rate: ₹${p.unit_price})</option>`;
-        });
+        if (!partsList || partsList.length === 0) {
+            partOptions = `<option value="">No parts found (Add in Master Parts first)</option>`;
+        } else {
+            partsList.forEach(p => {
+                const isSel = p.id == selectedPartId ? 'selected' : '';
+                partOptions += `<option value="${p.id}" data-price="${p.unit_price || 0}" ${isSel}>${p.part_code} - ${p.part_name} (₹${p.unit_price || 0})</option>`;
+            });
+        }
 
         tr.innerHTML = `
             <td>
@@ -1123,7 +1160,24 @@ document.addEventListener('DOMContentLoaded', () => {
         addBillItemRow();
     });
 
-    document.getElementById('btn-create-bill').addEventListener('click', () => {
+    document.getElementById('btn-create-bill').addEventListener('click', async () => {
+        // Fetch freshest vendors and parts before opening
+        try {
+            const [vRes, pRes] = await Promise.all([
+                API.getVendors(),
+                API.getParts()
+            ]);
+            if (vRes.success) {
+                vendorsList = vRes.data;
+                populateVendorDropdowns(vendorsList);
+            }
+            if (pRes.success) {
+                partsList = pRes.data;
+            }
+        } catch (e) {
+            console.error('Error fetching vendors/parts for bill:', e);
+        }
+
         document.getElementById('form-purchase-bill').reset();
         document.getElementById('bill-date').value = new Date().toISOString().split('T')[0];
         billItemsBody.innerHTML = '';
